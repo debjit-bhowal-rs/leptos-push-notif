@@ -3,7 +3,8 @@ use std::sync::Arc;
 use redb::{Database, ReadableTable, TableDefinition};
 use sha2::{Digest, Sha512};
 use tokio::task::spawn_blocking;
-use web_push::SubscriptionInfo;
+
+use super::SubInfo;
 
 const TABLE: TableDefinition<&[u8], &[u8]> = TableDefinition::new("subscriptions");
 
@@ -30,7 +31,7 @@ impl SubKV {
         spawn_blocking(move || f(&db))
     }
 
-    pub async fn add_subscription(&self, subscription: SubscriptionInfo) -> Result<(), redb::Error> {
+    pub async fn add_subscription(&self, subscription: SubInfo) -> Result<(), redb::Error> {
         self.spawn_blocking(move |db| {
             let raw = serde_json::to_vec(&subscription).unwrap();
             let sub_hash = Sha512::digest(&raw);
@@ -43,7 +44,7 @@ impl SubKV {
         }).await.unwrap()
     }
 
-    pub async fn all_subscriptions(&self) -> Result<Vec<SubscriptionInfo>, redb::Error> {
+    pub async fn all_subscriptions(&self) -> Result<Vec<SubInfo>, redb::Error> {
         self.spawn_blocking(move |db| {
             let read_txn = db.begin_read()?;
             let subs = {

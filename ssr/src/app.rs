@@ -1,5 +1,5 @@
-use crate::{error_template::{AppError, ErrorTemplate}, push::worker::PushWorker};
-use gloo::worker::Registrable;
+use crate::error_template::{AppError, ErrorTemplate};
+
 use leptos::*;
 use leptos_meta::*;
 use leptos_router::*;
@@ -9,7 +9,11 @@ pub fn App() -> impl IntoView {
     // Provides context that manages stylesheets, titles, meta tags, etc.
     provide_meta_context();
 
+    #[cfg(feature = "hydrate")]
     create_effect(|_| {
+        use crate::push::worker::PushWorker;
+        use gloo::worker::Registrable;
+
         let reg = PushWorker::registrar();
         reg.register();
     });

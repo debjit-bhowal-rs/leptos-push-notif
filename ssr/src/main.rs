@@ -14,7 +14,7 @@ async fn server_fn_handler(
         move || {
             provide_context(app_state.push_kv.clone());
             provide_context(app_state.push_client.clone());
-            provide_context(app_state.sig_b.clone());
+            provide_context(app_state.vapid.clone());
         },
         request,
     )
@@ -31,7 +31,7 @@ async fn leptos_routes_handler(
         move || {
             provide_context(app_state.push_kv.clone());
             provide_context(app_state.push_client.clone());
-            provide_context(app_state.sig_b.clone());
+            provide_context(app_state.vapid.clone());
         },
         App,
     );

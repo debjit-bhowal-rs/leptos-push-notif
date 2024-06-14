@@ -1,7 +1,7 @@
+use std::str::FromStr;
+
 use leptos::{expect_context, server, ServerFnError};
 use serde::{Serialize, Deserialize};
-use sub_kv::SubKV;
-use web_push::{ContentEncoding, HyperWebPushClient, PartialVapidSignatureBuilder, SubscriptionInfo, WebPushClient, WebPushMessageBuilder};
 
 #[cfg(feature = "hydrate")]
 pub mod worker;
@@ -14,8 +14,42 @@ pub struct PushPayload {
     pub body: String,
 }
 
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct SubKeys {
+    pub p256dh: String,
+    pub auth: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct SubInfo {
+    pub endpoint: String,
+    pub keys: SubKeys,
+}
+
+#[cfg(feature = "ssr")]
+impl TryFrom<SubInfo> for web_push_native::WebPushBuilder {
+    type Error = ServerFnError;
+
+    fn try_from(value: SubInfo) -> Result<Self, Self::Error> {
+        use http::Uri;
+        use base64ct::{Encoding, Base64UrlUnpadded};
+        use web_push_native::{Auth, WebPushBuilder};
+
+        let uri = Uri::from_str(&value.endpoint)?;
+        let pubkey = web_push_native::p256::PublicKey::from_sec1_bytes(
+            &Base64UrlUnpadded::decode_vec(&value.keys.p256dh)?
+        )?;
+        let auth = Auth::clone_from_slice(
+            &Base64UrlUnpadded::decode_vec(&value.keys.auth)?
+        );
+
+        Ok(WebPushBuilder::new(uri, pubkey, auth))
+    }
+}
+
 #[server]
-pub async fn add_subscription(info: SubscriptionInfo) -> Result<(), ServerFnError> {
+pub async fn add_subscription(info: SubInfo) -> Result<(), ServerFnError> {
+    use sub_kv::SubKV;
     let kv: SubKV = expect_context();
     // WARN: You should verify that subscription info matches server VAPID key
     kv.add_subscription(info).await?;
@@ -28,22 +62,24 @@ pub async fn add_subscription(info: SubscriptionInfo) -> Result<(), ServerFnErro
 /// nor is this efficient
 #[server]
 pub async fn broadcast_message(title: String, body: String) -> Result<(), ServerFnError> {
+    use sub_kv::SubKV;
+    use crate::state::server::VapidKey;
+    use web_push_native::WebPushBuilder;
+
     let kv: SubKV = expect_context();
     let subs = kv.all_subscriptions().await?;
 
-    let sigb: PartialVapidSignatureBuilder = expect_context();
+    let vapid: VapidKey = expect_context();
     let content = PushPayload { title, body };
     let content_raw = serde_json::to_vec(&content).unwrap();
-    let client: HyperWebPushClient = expect_context();
+    let client: reqwest::Client = expect_context();
 
     for sub in subs {
-        let sig = sigb.clone().add_sub_info(&sub).build()?;
+        let http_req = WebPushBuilder::try_from(sub)?
+            .with_vapid(&vapid, "mailto:example@example.com")
+            .build(content_raw.as_slice())?;
 
-        let mut builder = WebPushMessageBuilder::new(&sub);
-        builder.set_payload(ContentEncoding::Aes128Gcm, &content_raw);
-        builder.set_vapid_signature(sig);
-
-        client.send(builder.build()?).await?;
+        client.execute(http_req.try_into()?).await?;
     }
 
     Ok(())

@@ -1,4 +1,5 @@
-use crate::error_template::{AppError, ErrorTemplate};
+use crate::{error_template::{AppError, ErrorTemplate}, push::worker::PushWorker};
+use gloo::worker::Registrable;
 use leptos::*;
 use leptos_meta::*;
 use leptos_router::*;
@@ -8,9 +9,12 @@ pub fn App() -> impl IntoView {
     // Provides context that manages stylesheets, titles, meta tags, etc.
     provide_meta_context();
 
+    create_effect(|_| {
+        let reg = PushWorker::registrar();
+        reg.register();
+    });
+
     view! {
-
-
         // injects a stylesheet into the document <head>
         // id=leptos means cargo-leptos will hot-reload this stylesheet
         <Stylesheet id="leptos" href="/pkg/leptos-push-notif.css"/>
@@ -44,7 +48,7 @@ fn HomePage() -> impl IntoView {
     let on_click = move |_| set_count.update(|count| *count += 1);
 
     view! {
-        <h1>"Welcome to Leptos!"</h1>
+        <h1>"Web-Push Example"</h1>
         <button on:click=on_click>"Click Me: " {count}</button>
     }
 }

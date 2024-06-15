@@ -40,6 +40,7 @@ impl SubKV {
                 let mut table = write_txn.open_table(TABLE)?;
                 table.insert(sub_hash.as_slice(), raw.as_slice())?;
             }
+            write_txn.commit()?;
             Ok(())
         }).await.unwrap()
     }

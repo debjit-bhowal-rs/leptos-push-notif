@@ -1,18 +1,9 @@
-use std::str::FromStr;
-
-use leptos::{expect_context, server, ServerFnError};
+use leptos::*;
 use serde::{Serialize, Deserialize};
 
-#[cfg(feature = "hydrate")]
-pub mod worker;
 #[cfg(feature = "ssr")]
 pub mod sub_kv;
 
-#[derive(Serialize, Deserialize)]
-pub struct PushPayload {
-    pub title: String,
-    pub body: String,
-}
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct SubKeys {
@@ -34,6 +25,7 @@ impl TryFrom<SubInfo> for web_push_native::WebPushBuilder {
         use http::Uri;
         use base64ct::{Encoding, Base64UrlUnpadded};
         use web_push_native::{Auth, WebPushBuilder};
+        use std::str::FromStr;
 
         let uri = Uri::from_str(&value.endpoint)?;
         let pubkey = web_push_native::p256::PublicKey::from_sec1_bytes(
@@ -70,7 +62,7 @@ pub async fn broadcast_message(title: String, body: String) -> Result<(), Server
     let subs = kv.all_subscriptions().await?;
 
     let vapid: VapidKey = expect_context();
-    let content = PushPayload { title, body };
+    let content = common::PushPayload { title, body };
     let content_raw = serde_json::to_vec(&content).unwrap();
     let client: reqwest::Client = expect_context();
 

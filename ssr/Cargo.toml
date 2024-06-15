@@ -17,6 +17,7 @@ tokio = { version = "1", features = ["rt-multi-thread"], optional = true }
 tower = { version = "0.4", optional = true }
 tower-http = { version = "0.5", features = ["fs"], optional = true }
 wasm-bindgen.workspace = true
+wasm-bindgen-futures = "0.4.42"
 thiserror = "1"
 tracing = { version = "0.1", optional = true }
 http = "1"
@@ -25,7 +26,18 @@ log.workspace = true
 simple_logger.workspace = true
 leptos-use = "0.10.10"
 js-sys = { workspace = true, optional = true }
-web-sys = { workspace = true , optional = true }
+web-sys = { workspace = true , features = [
+    "Window",
+    "Document",
+    "Worker",
+    "WorkerGlobalScope",
+    "PushEvent",
+    "PushMessageData",
+    "PushManager",
+    "PushSubscriptionOptionsInit",
+    "PushSubscription",
+    "PushSubscriptionJson",
+], optional = true }
 serde.workspace = true
 serde_json.workspace = true
 redb = { version = "2.1.1", optional = true }
@@ -38,7 +50,12 @@ reqwest = { version = "0.12", default-features = false, features = [
     "http2",
 ] }
 base64ct = { version = "1.6.0", optional = true }
+common = { path = "../common", package = "leptos-push-notif-common" }
+serde-wasm-bindgen = "0.6.5"
+console_log.workspace = true
 
+[build-dependencies]
+wasm-pack = "0.12.1"
 
 [features]
 hydrate = ["leptos/hydrate", "leptos_meta/hydrate", "leptos_router/hydrate", "dep:gloo", "dep:js-sys", "dep:web-sys", "reqwest/native-tls"]
@@ -128,3 +145,5 @@ lib-default-features = false
 #
 # Optional. Defaults to "release".
 lib-profile-release = "wasm-release"
+
+hash-files = true

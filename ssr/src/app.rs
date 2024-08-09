@@ -21,7 +21,7 @@ pub fn App() -> impl IntoView {
         log::info!("registring worker");
         let nav = window().navigator();
         let sw = nav.service_worker();
-        let sw_prom = sw.register("/leptos-push-notif-worker.js");
+        let sw_prom = sw.register("/firebase-messaging-sw.js");
         let sw_reg_js = JsFuture::from(sw_prom).await.unwrap();
         let sw_reg = ServiceWorkerRegistration::from(sw_reg_js);
         log::info!("registered");

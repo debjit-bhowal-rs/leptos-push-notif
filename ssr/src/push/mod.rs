@@ -54,25 +54,50 @@ pub async fn add_subscription(info: SubInfo) -> Result<(), ServerFnError> {
 /// nor is this efficient
 #[server]
 pub async fn broadcast_message(title: String, body: String) -> Result<(), ServerFnError> {
-    use sub_kv::SubKV;
-    use crate::state::server::VapidKey;
-    use web_push_native::WebPushBuilder;
+    // use sub_kv::SubKV;
+    // use crate::state::server::VapidKey;
+    // use web_push_native::WebPushBuilder;
 
-    let kv: SubKV = expect_context();
-    let subs = kv.all_subscriptions().await?;
+    // let kv: SubKV = expect_context();
+    // let subs = kv.all_subscriptions().await?;
 
-    let vapid: VapidKey = expect_context();
-    let content = common::PushPayload { title, body };
-    let content_raw = serde_json::to_vec(&content).unwrap();
-    let client: reqwest::Client = expect_context();
+    // let vapid: VapidKey = expect_context();
+    // let content = common::PushPayload { title, body };
+    // let content_raw = serde_json::to_vec(&content).unwrap();
+    // let client: reqwest::Client = expect_context();
 
-    for sub in subs {
-        let http_req = WebPushBuilder::try_from(sub)?
-            .with_vapid(&vapid, "mailto:example@example.com")
-            .build(content_raw.as_slice())?;
+    // for sub in subs {
+    //     let http_req = WebPushBuilder::try_from(sub)?
+    //         .with_vapid(&vapid, "mailto:example@example.com")
+    //         .build(content_raw.as_slice())?;
 
-        client.execute(http_req.try_into()?).await?;
+    //     client.execute(http_req.try_into()?).await?;
+    // }
+
+    use wasm_bindgen::prelude::*;
+
+    #[wasm_bindgen(module = "/setup-firebase-mesaging.js")]
+    extern "C" {
+        // fn name() -> String;
+    
+        // type MyClass;
+    
+        // #[wasm_bindgen(constructor)]
+        // fn new() -> MyClass;
+    
+        // #[wasm_bindgen(method, getter)]
+        // fn number(this: &MyClass) -> u32;
+        // #[wasm_bindgen(method, setter)]
+        // fn set_number(this: &MyClass, number: u32) -> MyClass;
+        // #[wasm_bindgen(method)]
+        // fn render(this: &MyClass) -> String;
+
+        // #[wasm_bindgen(method)]
+        fn get_token() -> String;
     }
+
+    let token = get_token();
+    log::info!("got token: {}", token);
 
     Ok(())
 }
